@@ -28,7 +28,7 @@ public:
 class LRU
 {
 public:
-    int m, n, cnt;// m 实际大小 n 目前的大小
+    int m, n, cnt;// m ʵ�ʴ�С n Ŀǰ�Ĵ�С
     ll *tag;
     ll *stp;
     set< pair<ll,ll> >tt;
@@ -170,13 +170,46 @@ public:
         if( it == st.end() || it->id != a.id ) return 1;
         return 0;
     }
-    bool del( block &a ){
+    bool findx( block a ){
         int ii, jj, i, j;
         tot --;
         ii = jj = -1;
         set<block>::iterator it;
         it = st.lower_bound( block(-1, a.id) );
         if( it == st.end() || it->id != a.id ){ return 1; }
+        ll time = it->time;
+        //st.erase(it);
+        BG tmp;
+//        printf("query ep %lld\n", time/epoch);
+        for( i = 0; i < 30; i ++ ){
+            set<BG>::iterator is;
+            BG bg;
+            bg.ep = time/epoch;
+            //bg.q = NULL;
+            is = p[i].lower_bound( bg );
+            if( is == p[i].end() || is->ep != bg.ep ) continue;
+            //if( is == p[i].end() ) continue;
+            //else if( is->ep != it->time/epoch ) continue;
+            else{
+                set<block>::iterator ir;
+                ir = is->q->find( block(time, a.id) );
+                if( ir == is->q->end() ){  st.erase(it); return 1; }
+                if( ir->time == time ) return 0;
+                break;
+            }
+        }
+        if( i == 30 ){
+            st.erase(it);
+            return 1;
+        }
+    }
+    void del( block a ){
+        int ii, jj, i, j;
+        tot --;
+        ii = jj = -1;
+        set<block>::iterator it;
+        it = st.lower_bound( block(-1, a.id) );
+        if( it == st.end() || it->id != a.id ){ puts("error1"); exit(1); }
         ll time = it->time;
         st.erase(it);
         BG tmp;
@@ -206,12 +239,10 @@ public:
                 break;
             }
         }
-        if( i == 30 ){
-            return 1;
-            printf("time %lld id %lld\n", time, a.id);
-            puts("error3"); exit(1);
-        }
-        return 0;
+//        if( i == 30 ){
+//            printf("time %lld id %lld\n", time, a.id);
+//            puts("error3"); exit(1);
+//        }
     }
     void ins( block a ){
         int ii, jj, i, j;
@@ -237,6 +268,7 @@ public:
     }
 };
 
+
 int main()
 {
     int i, j, k;
@@ -245,16 +277,15 @@ int main()
     ll time, offset, siz;
     ll base = -1, pre;
     LRU gh( area, area );
-    LRU my( area, area/2 );
-    EAR ear( area/2 );
+    //LRU my( area, area/2 );
+    EAR ear(area);
     LRU bff( area, area );
     LRU bff2( area, area );
-    //EAR e;
     BG bg;
     ll tot = 0, hit1 = 0, hit2 = 0, hit3 = 0;
-    FILE *c1 = fopen("out1.csv", "w");
-    //FILE *c2 = fopen("out2.csv", "w");
-    FILE *c3 = fopen("out3.csv", "w");
+    //FILE *c1 = fopen("out1.csv", "w");
+    FILE *c2 = fopen("out2.csv", "w");
+    //FILE *c3 = fopen("out3.csv", "w");
     while( ~scanf("%lld%lld%lld", &time, &offset, &siz) ){
         if( base == -1 ){
             base = time;
@@ -264,22 +295,22 @@ int main()
         ++ tot;
         if( tot%1000 == 0 ) printf("%lld ok\n", tot);
 
-        int ft = 0;
-        for( ll x = offset/bz; x < (offset+siz+bz-1)/bz; x ++ ){
-            block nw( time, x );
-            block w(0, 0);
-            int ret = gh.find(nw);
-            if( ret == 0 ) continue;
-            else{
-                int ret = gh.ins( nw, w );
-                //if( ret == 2 ) printf("xxx\n");
-                ft = 1;
-            }
-        }
-        if( ft ){
-            fprintf(c1, "%lld %lld %lld\n", time, offset, siz);
-        }
-        else hit1 ++;
+//        int ft = 0;
+//        for( ll x = offset/bz; x < (offset+siz+bz-1)/bz; x ++ ){
+//            block nw( time, x );
+//            block w(0, 0);
+//            int ret = gh.find(nw);
+//            if( ret == 0 ) continue;
+//            else{
+//                int ret = gh.ins( nw, w );
+//                //if( ret == 2 ) printf("xxx\n");
+//                ft = 1;
+//            }
+//        }
+//        if( ft ){
+//            fprintf(c1, "%lld %lld %lld\n", time, offset, siz);
+//        }
+//        else hit1 ++;
         if( time/epoch != pre/epoch ){
             //printf("pre %lld\n", pre+128166372003061000);
             bg.ep = pre/epoch;
@@ -303,17 +334,17 @@ int main()
             block nw( time, x );
             block w(0, 0);
             // not in LRU
-            int ret = my.find( nw );
-            if( ret == 0 ){
-                continue;
-            }
+//            int ret = my.find( nw );
+//            if( ret == 0 ){
+//                continue;
+//            }
             // not in  ear
-            ret = ear.del(nw);
+            int ret = ear.findx(nw);
             if( ret == 0 ){
-                //ear.del( nw );
-                int ret1 = my.ins( nw, w );
-                if( ret1 == 2 )
-                    ear.ins( w );
+//                ear.del( nw );
+//                int ret1 = my.ins( nw, w );
+//                if( ret1 == 2 )
+//                    ear.ins( w );
                 continue;
             }
             // in buffer
@@ -327,21 +358,22 @@ int main()
             }
         }
         if( fl ){
-            fprintf(c3, "%lld %lld %lld\n", time, offset, siz);
+            fprintf(c2, "%lld %lld %lld\n", time, offset, siz);
         }
-        else hit3 ++;
+        else hit2 ++;
 
-        if( 1.0*hit1/tot - 1.0*hit3/tot >= 0.1 && tot%1000 == 0 ){
-            if( !my.inc() ){
-                ear.dec();
-            }
-            printf("judge %lld 1 %.2f 3 %.2f\n", tot, 100.0*hit1/tot, 100.0*hit3/tot);
-        }
+//        if( 1.0*hit1/tot - 1.0*hit3/tot >= 0.1 && tot%1000 == 0 ){
+//            if( !my.inc() ){
+//                ear.dec();
+//            }
+//            printf("judge %lld 1 %.2f 3 %.2f\n", tot, 100.0*hit1/tot, 100.0*hit3/tot);
+//        }
         //printf("%lld ok\n", tot);
     }
-    printf("LRU %.2f\n", 100.0*hit1/tot);
-    printf("EAR+LRU %.2f\n", 100.0*hit3/tot);
-    fclose(c1);
-   // fclose(c2);
-    fclose(c3);
+    //printf("LRU %.2f\n", 100.0*hit1/tot);
+    printf("EAR %.2f\n", 100.0*hit2/tot);
+    //printf("EAR+LRU %.2f\n", 100.0*hit3/tot);
+    //fclose(c1);
+    fclose(c2);
+    //fclose(c3);
 }
